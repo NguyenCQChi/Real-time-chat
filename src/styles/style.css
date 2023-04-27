@@ -1,0 +1,16 @@
+body {
+  margin: 0px;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.lf-player-container {
+  width: 90%;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 80%;
+  margin: 20px auto
+}
