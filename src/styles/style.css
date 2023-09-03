@@ -1,6 +1,6 @@
 body {
   margin: 0px;
-  font-family: 'Montserrat', sans-serif;
+  font-family: 'Times New Roman', serif;
 }
 
 .lf-player-container {
@@ -14,3 +14,7 @@ body {
   width: 80%;
   margin: 20px auto
 }
+
+/* ::-webkit-scrollbar {
+  width: 20px
+} */

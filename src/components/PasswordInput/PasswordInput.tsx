@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useField } from 'formik';
-import { TextField } from '@mui/material';
+import { TextField, InputAdornment, IconButton } from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 
 type InputProps = {
   form: any,
@@ -11,13 +12,17 @@ type InputProps = {
 }
 
 
-const Input = ({ form, field, onUpdateValue, placeholder = "", required = false } : InputProps ) => {
+const PasswordInput = ({ form, field, onUpdateValue, placeholder = "", required = false } : InputProps ) => {
   const [ fieldChild, meta ] = useField(field.name);
   const [ change, setChange ] = useState(false);
   const [ didFocus, setDidFocus ] = useState(false);
   const handleFocus = () => setDidFocus(true);
   const [ showFeedback, setShowFeedback ] = useState(false);
   const [ lostFocus, setLostFocus ] = useState(false);
+  const [ showPassword, setShowPassword ] = useState(false);
+
+  const handleClickShowPassword = () => setShowPassword(!showPassword)
+  const handleMouseDownPassowrd = () => setShowPassword(!showPassword)
 
   const handleChange = (value: any) => {
     if(value) {
@@ -55,12 +60,31 @@ const Input = ({ form, field, onUpdateValue, placeholder = "", required = false 
           onChange={(event) => handleChange(event.target.value)}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          sx={{width: '100%', fontSize: '14px'}}
+          sx={{
+            width: '100%', 
+            fontSize: '14px', 
+            '.css-1c07fzc-MuiInputBase-root-MuiOutlinedInput-root': {
+              paddingRight: '3px'
+            }
+          }}
           size="small"
+          type={ showPassword ? 'text' : 'password' }
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position='end'>
+                <IconButton 
+                  onClick={handleClickShowPassword}
+                  onMouseDown={handleMouseDownPassowrd}
+                >
+                  { showPassword ? <Visibility /> : <VisibilityOff /> }
+                </IconButton>
+              </InputAdornment>
+            )
+          }}
         />
       </div>
     </div>
   )
 }
 
-export default Input;
+export default PasswordInput;

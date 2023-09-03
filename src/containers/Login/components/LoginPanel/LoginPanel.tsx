@@ -1,24 +1,52 @@
+import React, { useState, useContext } from 'react';
 import * as Yup from 'yup';
 import { Formik, Form as FormBase, FastField } from 'formik';
-import { Input } from '@components';
+import { Input, PasswordInput } from '@components';
 import { styled } from '@mui/material/styles';
 import { Button } from '@mui/base';
 import { motion } from 'framer-motion';
+import { Alert } from '@mui/material';
+import { auth, database } from '../../../../../firebaseConfig';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import io from 'socket.io-client';
+import Router from 'next/router';
+import { SocketContext } from '@src/contexts/SocketContext';
+
+let socket
 
 const LoginPanel = () => {
+  const [ failToast, setFailToast ] = useState(false);
+  const { setSocket } = useContext(SocketContext);
 
   const validationSchema = Yup.object({
-    name: Yup.string().required('Username is required').min(1, 'Username is required'),
+    email: Yup.string().required('Email is required').min(1, 'Email is required'),
     password: Yup.string().required('Password is required').min(8, 'Password should be of minimum 8 characters length')
   })
 
   const initialValue = {
-    Name: '',
-    Password: '',
+    email: '',
+    password: '',
   }
 
-  const onSubmit = async () => {
+  const onSubmit = async (value: any) => {
     console.log("Submit")
+    signInWithEmailAndPassword(auth, value.email, value.password)
+      .then((userCredential) => {
+        setFailToast(false)
+        socketInitializer(userCredential.user)
+        Router.push('/chat')
+      })
+      .catch((error) => {
+        setFailToast(true)
+      })
+  }
+
+  const socketInitializer = async(user) => {
+    await fetch('api/socket')
+    socket = io()
+    setSocket(socket)
+
+    // socket.emit('userInfo', user)
   }
 
   const CustomButton = styled(Button)(({theme}) => ({
@@ -56,8 +84,8 @@ const LoginPanel = () => {
         return (
           <FormBase className='form'>
             <FastField 
-              name='name'
-              placeholder='Username'
+              name='email'
+              placeholder='Email'
               required
               component={Input}
             />
@@ -65,8 +93,9 @@ const LoginPanel = () => {
               name='password'
               placeholder='Password'
               required
-              component={Input}
+              component={PasswordInput}
             />
+            { failToast && <Alert variant='outlined' severity='error'> Incorrect username or password! Please try again </Alert> }
             <div style={buttonContainer}>
               {(isValid && dirty) ? (
                 <motion.div
@@ -78,6 +107,7 @@ const LoginPanel = () => {
                   <CustomButton
                     disabled={!(isValid && dirty)}
                     sx={hoverButton}
+                    type='submit'
                   >
                     Login
                   </CustomButton>
