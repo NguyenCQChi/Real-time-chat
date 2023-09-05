@@ -4,10 +4,10 @@ import { Box, List, InputBase, Avatar, Divider, ListItemAvatar, ListItemButton, 
 import { useTheme } from '@mui/material/styles';
 import { Search } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'react-redux';
-import { addUsers, ChatAppState } from '../../stores/chat.slice';
+import { addUsers, setChosenUser, addRoom, ChatAppState } from '../../stores/chat.slice';
 import { database } from 'firebaseConfig';
-import { collection, getDocs } from "firebase/firestore";
-import { UserType } from '../../types';
+import { collection, getDocs, doc } from "firebase/firestore";
+import { UserType, RoomType } from '../../types';
 import { getAuth } from 'firebase/auth';
 import { SocketContext } from '@src/contexts/SocketContext';
 
@@ -49,6 +49,14 @@ const ChatBoard = () => {
     })
   }
 
+  const getRooms = async() => {
+    const queryRooms = await getDocs(collection(database, "users", currentUser.uid, 'rooms'))
+    queryRooms.forEach(room => {
+      dispatch(addRoom(room.data() as RoomType))
+    }) 
+    console.log('rooms: ' + queryRooms.size)
+  }
+
   const firstLetter = (name: string) => {
     const letter = name.slice(0, 1)
     return letter.toUpperCase()
@@ -56,31 +64,46 @@ const ChatBoard = () => {
 
   useEffect(() => {
     getUsers()
+    getRooms()
   }, [])
+
+  //Default as the first user when the user just got into the page
+  useEffect(() => {
+    if(users.length > 0) {
+      dispatch(setChosenUser(users[0]))
+    }
+  }, [users])
+
+  //Set the clicked user to open the chat room with the user
+  useEffect(() => {
+    dispatch(setChosenUser(users[selectedIndex]))
+  }, [selectedIndex])
 
   useEffect(() => {
     socket.on('new-user', (user) => {
-      console.log('new user join: ' + user.name)
       dispatch(addUsers(user as UserType))
     })
   }, [socket])
 
   return (
-    <Box sx={{display: 'flex', flexFlow: 'column', height: '100vh', width: '100vw', background: `${theme.palette.myBackground.light}`}}>
-      <NavigationBar sx={{height: '8%', background: `${theme.palette.myBackground.main}`, boxShadow: `0px 2px 0px 0px ${theme.palette.myBackground.dark}`, px: '35px', display: 'flex', flexDirection: 'column', justifyContent: 'center'}}/>
-      <Box sx={{height: '92%', padding: '35px'}}>
-        <Box sx={{width: '100%', display: 'flex', flexDirection: 'row', flex: 1, background: 'red'}}>
-          <Box sx={{width: '30%', gap: '35px', display: 'flex', flexDirection: 'column'}}>
+    <Box sx={{display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', background: `${theme.palette.myBackground.light}`, gap: '35px'}}>
+      <NavigationBar sx={{minHeight: '80px', background: `${theme.palette.myBackground.main}`, boxShadow: `0px 2px 0px 0px ${theme.palette.myBackground.dark}`, px: '35px', display: 'flex', flexDirection: 'column', justifyContent: 'center'}}/>
+      <Box sx={{flex: 1, minHeight: '0px', marginBottom: '35px'}}>
+        <Box sx={{display: 'flex', flexDirection: 'row', height: '100%', gap: '35px'}}>
+
+          <Box sx={{width: '30%', marginLeft: '35px', display: 'flex', flexDirection: 'column', gap: '35px'}}>
             <Box sx={{
               border: `0.5px solid ${theme.palette.myBackground.dark}`, 
-              height: '7.5%', borderRadius: '15px',
+              background: `${theme.palette.myBackground.dark}`,
+              height: '7.5%', 
+              borderRadius: '15px',
               display: 'flex',
               flexDirection: 'row',
               px: '20px',
               alignItems: 'center',
               gap: '10px',
               ':hover': {
-                background: `${theme.palette.myBackground.dark}`,
+                background: `${theme.palette.myBackground.contrastText}`,
                 transitionDuration: '0.25s',
                 cursor: 'pointer'
               },
@@ -95,10 +118,9 @@ const ChatBoard = () => {
                 }}
               />
             </Box>
-            <Box sx={{overflow: 'auto', background: `${theme.palette.myBackground.dark}`, height: '92.5%'}}>
+            <Box sx={{background: `${theme.palette.myBackground.dark}`, overflow: 'auto', flex: '1', borderRadius: '15px'}}>
               <List sx={{
-                background: `${theme.palette.myBackground.main}`, 
-                borderRadius: '15px',
+                background: `${theme.palette.myBackground.main}`,
                 '&.MuiList-root.MuiList-padding': {
                   pt: '0px',
                   pb: '0px'
@@ -110,7 +132,6 @@ const ChatBoard = () => {
                       selected={selectedIndex === key}
                       onClick={(e) => handleListItemClick(e, key)}
                       sx={{
-                        px: '20px',
                         background: `${theme.palette.myBackground.dark}`,
                         ':hover': {
                           background: `${theme.palette.myBackground.main}`,
@@ -129,7 +150,8 @@ const ChatBoard = () => {
               </List>
             </Box>
           </Box>
-          <Box sx={{background: `${theme.palette.myBackground.main}`, width: '70%', borderRadius: '15px', padding: '20px 30px'}}>
+
+          <Box sx={{flex: 'auto', marginRight: '35px', background: `${theme.palette.myBackground.main}`, borderRadius: '15px', padding: '20px 30px'}}>
             <ChatContainer />
           </Box>
         </Box>

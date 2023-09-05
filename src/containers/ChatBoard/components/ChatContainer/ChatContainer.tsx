@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { InputBase, Box } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { Send } from '@mui/icons-material';
+import { RoomType } from '@src/types';
 
-const ChatContainer = () => {
+const ChatContainer = ({ room } : { room?: RoomType }) => {
   const theme = useTheme();
   const [ message, setMessage ] = useState('')
 

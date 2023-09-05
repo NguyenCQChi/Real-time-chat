@@ -3,10 +3,10 @@ import * as Yup from 'yup';
 import { Formik, Form as FormBase, FastField } from 'formik';
 import { Input, PasswordInput } from '@components';
 import { styled } from '@mui/material/styles';
-import { Button } from '@mui/base';
+import { Button } from '@mui/base';  
 import { motion } from 'framer-motion';
 import { auth, database } from '../../../../../firebaseConfig';
-import { collection, addDoc } from 'firebase/firestore';
+import { setDoc, doc } from 'firebase/firestore';
 import { Alert } from '@mui/material';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import io from 'socket.io-client';
@@ -48,11 +48,9 @@ const CreateAcc = () => {
             friends: [],
             rooms: []
           }
-
-          const dbRef = collection(database, 'users')
       
           try {
-            const docRef = await addDoc(dbRef, userData)
+            await setDoc(doc(database, 'users', userCredential.user.uid), userData)
           } catch(e) {
             return
           }

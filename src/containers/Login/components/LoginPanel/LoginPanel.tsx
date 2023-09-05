@@ -45,8 +45,6 @@ const LoginPanel = () => {
     await fetch('api/socket')
     socket = io()
     setSocket(socket)
-
-    // socket.emit('userInfo', user)
   }
 
   const CustomButton = styled(Button)(({theme}) => ({
