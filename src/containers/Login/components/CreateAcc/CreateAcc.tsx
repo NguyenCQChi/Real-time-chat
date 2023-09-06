@@ -56,6 +56,7 @@ const CreateAcc = () => {
           }
 
           socketInitializer(userData)
+          sessionStorage.setItem('fromLogin', 'false')
           Router.push('/chat')
         })
         .catch((error) => {

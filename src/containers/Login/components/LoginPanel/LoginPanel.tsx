@@ -6,7 +6,7 @@ import { styled } from '@mui/material/styles';
 import { Button } from '@mui/base';
 import { motion } from 'framer-motion';
 import { Alert } from '@mui/material';
-import { auth, database } from '../../../../../firebaseConfig';
+import { auth } from '../../../../../firebaseConfig';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import io from 'socket.io-client';
 import Router from 'next/router';
@@ -34,6 +34,7 @@ const LoginPanel = () => {
       .then((userCredential) => {
         setFailToast(false)
         socketInitializer(userCredential.user)
+        sessionStorage.setItem('fromLogin', 'true')
         Router.push('/chat')
       })
       .catch((error) => {

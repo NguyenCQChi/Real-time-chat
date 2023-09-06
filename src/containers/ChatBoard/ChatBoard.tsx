@@ -6,7 +6,7 @@ import { Search } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'react-redux';
 import { addUsers, setChosenUser, addRoom, ChatAppState } from '../../stores/chat.slice';
 import { database } from 'firebaseConfig';
-import { collection, getDocs, doc } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 import { UserType, RoomType } from '../../types';
 import { getAuth } from 'firebase/auth';
 import { SocketContext } from '@src/contexts/SocketContext';
@@ -17,8 +17,10 @@ const ChatBoard = () => {
   const [ selectedIndex, setSelectedIndex ] = useState<number>(0)
   const dispatch = useDispatch()
   const users = useSelector((state: ChatAppState) => state.users)
+  const rooms = useSelector((state: ChatAppState) => state.rooms)
   const currentUser = getAuth().currentUser;
   const { socket } = useContext(SocketContext)
+  const fromLogin = sessionStorage.getItem('fromLogin')
 
   const handleChange = (value: any) => {
     setSearch(value)
@@ -40,6 +42,17 @@ const ChatBoard = () => {
     return true
   }
 
+  // TO-DO: Check condition
+  const checkRoom = (room: RoomType) => {
+    let existed = false;
+    rooms.forEach(eachRoom => {
+      if(eachRoom.id.includes(room.id[0]) && eachRoom.id.includes(room.id[1])) {
+        existed = true;
+      }
+    })
+    return existed
+  }
+
   const getUsers = async() => {
     const queryUsers = await getDocs(collection(database, "users"))
     queryUsers.forEach(doc => {
@@ -53,8 +66,19 @@ const ChatBoard = () => {
     const queryRooms = await getDocs(collection(database, "users", currentUser.uid, 'rooms'))
     queryRooms.forEach(room => {
       dispatch(addRoom(room.data() as RoomType))
-    }) 
-    console.log('rooms: ' + queryRooms.size)
+    })
+  }
+
+  const writeRooms = async() => {
+    if(fromLogin == 'false') {
+      const ref = doc(database, 'users', currentUser.uid)
+      await updateDoc(ref, { rooms : rooms })
+    }
+  }
+
+  const updateRooms = async(room) => {
+    const ref = doc(database, 'users', currentUser.uid)
+    await updateDoc(ref, { rooms: [...rooms, room] })
   }
 
   const firstLetter = (name: string) => {
@@ -64,15 +88,30 @@ const ChatBoard = () => {
 
   useEffect(() => {
     getUsers()
-    getRooms()
+    if(fromLogin == 'true') {
+      getRooms()
+    }
   }, [])
 
   //Default as the first user when the user just got into the page
   useEffect(() => {
     if(users.length > 0) {
       dispatch(setChosenUser(users[0]))
+      if(fromLogin == 'false') {
+        users.forEach(user => {
+          let room = {
+            id: [currentUser.uid, user.userId],
+            messages: []
+          }
+          dispatch(addRoom(room))
+        })
+      }
     }
   }, [users])
+
+  useEffect(() => {
+    writeRooms()
+  }, [rooms])
 
   //Set the clicked user to open the chat room with the user
   useEffect(() => {
@@ -82,6 +121,14 @@ const ChatBoard = () => {
   useEffect(() => {
     socket.on('new-user', (user) => {
       dispatch(addUsers(user as UserType))
+      let room = {
+        id: [currentUser.uid, user.userId],
+        messages: []
+      }
+      if(!checkRoom(room)) {
+        dispatch(addRoom(room))
+        updateRooms(room)
+      }
     })
   }, [socket])
 
