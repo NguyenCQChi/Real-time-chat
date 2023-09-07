@@ -47,7 +47,8 @@ const {
   addUsers,
   setChosenUser,
   setRoom,
-  addRoom
+  addRoom,
+  addMessage
 } = actions;
 
 export {
@@ -55,7 +56,8 @@ export {
   addUsers,
   setChosenUser,
   setRoom,
-  addRoom
+  addRoom,
+  addMessage
 };
 
 export default reducer;

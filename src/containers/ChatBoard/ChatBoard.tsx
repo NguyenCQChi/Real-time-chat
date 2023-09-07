@@ -1,12 +1,12 @@
 import { useState, useEffect, useContext } from 'react';
 import { NavigationBar, ChatContainer } from "./components";
-import { Box, List, InputBase, Avatar, Divider, ListItemAvatar, ListItemButton, ListItemText } from '@mui/material';
+import { Box, List, InputBase, Avatar, Divider, ListItemAvatar, ListItemButton, ListItemText, Skeleton, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { Search } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'react-redux';
 import { addUsers, setChosenUser, addRoom, ChatAppState } from '../../stores/chat.slice';
 import { database } from 'firebaseConfig';
-import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
+import { collection, getDoc, doc, updateDoc, arrayUnion, getDocs } from "firebase/firestore";
 import { UserType, RoomType } from '../../types';
 import { getAuth } from 'firebase/auth';
 import { SocketContext } from '@src/contexts/SocketContext';
@@ -15,9 +15,11 @@ const ChatBoard = () => {
   const theme = useTheme(); 
   const [ search, setSearch ] = useState('')
   const [ selectedIndex, setSelectedIndex ] = useState<number>(0)
+  const [ chosenRoom, setChosenRoom ] = useState<RoomType>(null)
   const dispatch = useDispatch()
   const users = useSelector((state: ChatAppState) => state.users)
   const rooms = useSelector((state: ChatAppState) => state.rooms)
+  const chosenUser = useSelector((state: ChatAppState) => state.chosenUser)
   const currentUser = getAuth().currentUser;
   const { socket } = useContext(SocketContext)
   const fromLogin = sessionStorage.getItem('fromLogin')
@@ -46,7 +48,8 @@ const ChatBoard = () => {
   const checkRoom = (room: RoomType) => {
     let existed = false;
     rooms.forEach(eachRoom => {
-      if(eachRoom.id.includes(room.id[0]) && eachRoom.id.includes(room.id[1])) {
+      const isExist = eachRoom.id.includes(room.id[0]) && eachRoom.id.includes(room.id[1])
+      if(isExist) {
         existed = true;
       }
     })
@@ -63,9 +66,10 @@ const ChatBoard = () => {
   }
 
   const getRooms = async() => {
-    const queryRooms = await getDocs(collection(database, "users", currentUser.uid, 'rooms'))
-    queryRooms.forEach(room => {
-      dispatch(addRoom(room.data() as RoomType))
+    const getCurrentFirebaseUser = await getDoc(doc(database, "users", currentUser.uid))
+    const roomArray = getCurrentFirebaseUser.data().rooms
+    roomArray.forEach(room => {
+      dispatch(addRoom(room as RoomType))
     })
   }
 
@@ -78,7 +82,7 @@ const ChatBoard = () => {
 
   const updateRooms = async(room) => {
     const ref = doc(database, 'users', currentUser.uid)
-    await updateDoc(ref, { rooms: [...rooms, room] })
+    await updateDoc(ref, { rooms: arrayUnion(room) })
   }
 
   const firstLetter = (name: string) => {
@@ -103,7 +107,10 @@ const ChatBoard = () => {
             id: [currentUser.uid, user.userId],
             messages: []
           }
-          dispatch(addRoom(room))
+
+          if(!checkRoom(room)) {
+            dispatch(addRoom(room))
+          }
         })
       }
     }
@@ -117,6 +124,14 @@ const ChatBoard = () => {
   useEffect(() => {
     dispatch(setChosenUser(users[selectedIndex]))
   }, [selectedIndex])
+
+  useEffect(() => {
+    rooms.forEach(room => {
+      if(room.id.includes(chosenUser.userId)) {
+        setChosenRoom(room)
+      }
+    })
+  }, [chosenUser, rooms])
 
   useEffect(() => {
     socket.on('new-user', (user) => {
@@ -198,8 +213,14 @@ const ChatBoard = () => {
             </Box>
           </Box>
 
-          <Box sx={{flex: 'auto', marginRight: '35px', background: `${theme.palette.myBackground.main}`, borderRadius: '15px', padding: '20px 30px'}}>
-            <ChatContainer />
+          <Box sx={{display: 'flex', flexDirection: 'column', flex: 'auto', marginRight: '35px', background: `${theme.palette.myBackground.main}`, borderRadius: '15px'}}>
+            <Box sx={{display: 'flex', flexDirection: 'row', gap: '10px', height: '7.5%', marginBottom: '10px', background: 'white', borderRadius: '15px 15px 0 0', alignItems: 'center', paddingLeft: '15px', boxShadow: `0 2px 0 0 ${theme.palette.myBackground.dark}`}}>
+              {chosenUser != null ? (<Avatar sx={{background: 'purple'}}> {firstLetter(chosenUser.name)} </Avatar>) :  <Skeleton variant='circular' sx={{width: '40px', height: '40px'}} />}
+              {chosenUser != null ? (<p style={{fontSize: '18px'}}> {chosenUser.name} </p>) : <Skeleton variant='rectangular' sx={{width: '180px', height: '20px'}} />}
+            </Box>
+            <Box sx={{flex: 'auto', borderRadius: '0 0 15px 15px', padding: '15px 20px'}}>
+              {chosenRoom != null ? <ChatContainer room={chosenRoom}/> : <Skeleton variant='rectangular' sx={{height: '100%'}} />}
+            </Box>
           </Box>
         </Box>
       </Box>

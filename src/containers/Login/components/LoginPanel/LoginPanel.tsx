@@ -7,7 +7,7 @@ import { Button } from '@mui/base';
 import { motion } from 'framer-motion';
 import { Alert } from '@mui/material';
 import { auth } from '../../../../../firebaseConfig';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, setPersistence, browserSessionPersistence } from 'firebase/auth';
 import io from 'socket.io-client';
 import Router from 'next/router';
 import { SocketContext } from '@src/contexts/SocketContext';
@@ -29,16 +29,22 @@ const LoginPanel = () => {
   }
 
   const onSubmit = async (value: any) => {
-    console.log("Submit")
-    signInWithEmailAndPassword(auth, value.email, value.password)
-      .then((userCredential) => {
-        setFailToast(false)
-        socketInitializer(userCredential.user)
-        sessionStorage.setItem('fromLogin', 'true')
-        Router.push('/chat')
+    
+    setPersistence(auth, browserSessionPersistence)
+      .then(() => {
+        return signInWithEmailAndPassword(auth, value.email, value.password)
+          .then((userCredential) => {
+            setFailToast(false)
+            socketInitializer(userCredential.user)
+            sessionStorage.setItem('fromLogin', 'true')
+            Router.push('/chat')
+          })
+          .catch((error) => {
+            setFailToast(true)
+          })
       })
-      .catch((error) => {
-        setFailToast(true)
+      .catch(error => {
+        console.log(error.message)
       })
   }
 

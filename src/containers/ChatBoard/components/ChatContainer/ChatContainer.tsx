@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { InputBase, Box } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { Send } from '@mui/icons-material';
@@ -16,14 +16,16 @@ const ChatContainer = ({ room } : { room?: RoomType }) => {
 
   }
 
+  useEffect(() => {
+    console.log(room.id)
+  }, [room])
+
   return (
     <div style={{width: '100%', height: '100%'}}>
-      <div style={{height: '88%'}}>
+      <div style={{height: '88%', background: 'cyan', position: 'relative', overflow: 'auto'}}>
         Messages
       </div>
-      <div style={{height: '3%'}}>
-
-      </div>
+      <div style={{height: '3%'}} />
       <div 
         style={{
           height: '9%', 
@@ -39,10 +41,16 @@ const ChatContainer = ({ room } : { room?: RoomType }) => {
           sx={{
             fontSize: '16px',
             border: `0.5px solid ${theme.palette.myBackground.dark}`, 
+            background: `${theme.palette.myBackground.dark}`,
             height: '70%', 
             borderRadius: '15px',
             flex: 1,
-            px: '15px'
+            px: '15px',
+            ':hover': {
+              background: `${theme.palette.myBackground.contrastText}`,
+              transitionDuration: '0.25s',
+              cursor: 'pointer'
+            }
           }}
         />
         <Box 

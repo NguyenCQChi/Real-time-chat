@@ -8,7 +8,7 @@ import { motion } from 'framer-motion';
 import { auth, database } from '../../../../../firebaseConfig';
 import { setDoc, doc } from 'firebase/firestore';
 import { Alert } from '@mui/material';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, setPersistence, browserSessionPersistence } from 'firebase/auth';
 import io from 'socket.io-client';
 import Router from 'next/router';
 import { SocketContext } from '@contexts/SocketContext';
@@ -35,36 +35,41 @@ const CreateAcc = () => {
   }
 
   const onSubmit = async (value: any) => {
-    createUserWithEmailAndPassword(auth, value.email, value.password)
-      .then((userCredential) => {
-        const user = userCredential.user
-        updateProfile(user, { 
-          displayName: value.name
-        }).then(async() => {
-          setFailToast(false)
-          const userData: UserType = {
-            name: value.name,
-            userId: userCredential.user.uid,
-            friends: [],
-            rooms: []
-          }
-      
-          try {
-            await setDoc(doc(database, 'users', userCredential.user.uid), userData)
-          } catch(e) {
-            return
-          }
+    setPersistence(auth, browserSessionPersistence)
+      .then(() => {
+        return createUserWithEmailAndPassword(auth, value.email, value.password)
+          .then((userCredential) => {
+            const user = userCredential.user
+            updateProfile(user, { 
+              displayName: value.name
+            }).then(async() => {
+              setFailToast(false)
+              const userData: UserType = {
+                name: value.name,
+                userId: userCredential.user.uid,
+                friends: [],
+                rooms: []
+              }
+          
+              try {
+                await setDoc(doc(database, 'users', userCredential.user.uid), userData)
+              } catch(e) {
+                return
+              }
 
-          socketInitializer(userData)
-          sessionStorage.setItem('fromLogin', 'false')
-          Router.push('/chat')
-        })
-        .catch((error) => {
-          setFailToast(true);
-        })
-      })
-      .catch((error) => {
-        setFailToast(true);
+              socketInitializer(userData)
+              sessionStorage.setItem('fromLogin', 'false')
+              Router.push('/chat')
+            })
+            .catch((error) => {
+              setFailToast(true);
+            })
+          })
+          .catch((error) => {
+            setFailToast(true);
+          })
+      }).catch((error) => {
+        console.log(error.message)
       })
   }
 
