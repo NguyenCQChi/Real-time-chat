@@ -5,14 +5,12 @@ export type ChatAppState = {
   users: UserType[];
   rooms: RoomType[];
   chosenUser: UserType;
-  messages: MessageType[];
 }
 
 const initialState: ChatAppState = {
   users: [],
   rooms: [],
   chosenUser: null,
-  messages: []
 };
 
 const slice = createSlice({
@@ -35,7 +33,14 @@ const slice = createSlice({
       state.rooms = action.payload;
     },
     addMessage: (state, action: PayloadAction<MessageType>) => {
-      state.messages = [...state.messages, action.payload]
+      const send = action.payload.personSendId
+      const receive = action.payload.personReceiveId
+
+      state.rooms.forEach(room => {
+        if(room.id.includes(send) && room.id.includes(receive)) {
+          room.messages = [...room.messages, action.payload]
+        }
+      })
     }
   }
 })

@@ -2,5 +2,8 @@ export type MessageType = {
   personSendId: string,
   personReceiveId: string,
   message: string,
-  timeStamp: any
+  timeStamp: {
+    date: any,
+    time: any
+  }
 }

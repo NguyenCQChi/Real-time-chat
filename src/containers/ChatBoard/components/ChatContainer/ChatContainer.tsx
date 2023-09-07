@@ -1,24 +1,49 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import { InputBase, Box } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { Send } from '@mui/icons-material';
-import { RoomType } from '@src/types';
+import { MessageType, RoomType } from '@src/types';
+import { SocketContext } from '@src/contexts/SocketContext';
+import { useSelector, useDispatch } from 'react-redux';
+import { ChatAppState, addMessage } from '../../../../stores/chat.slice';
+import { database } from 'firebaseConfig';
+import { collection, getDoc, doc, updateDoc, arrayUnion, getDocs } from "firebase/firestore";
+import { getAuth } from 'firebase/auth';
 
 const ChatContainer = ({ room } : { room?: RoomType }) => {
   const theme = useTheme();
   const [ message, setMessage ] = useState('')
-
-  const handleChange = (value: string) => {
-    setMessage(value);
-  }
+  const { socket } = useContext(SocketContext)
+  const currentUser = getAuth().currentUser;
+  const chosenUser = useSelector((state: ChatAppState) => state.chosenUser)
+  const dispatch = useDispatch()
 
   const handleSend = () => {
+    const timestamp = Date.now()
+    const format = new Intl.DateTimeFormat('en-US', {year: 'numeric', month: '2-digit',day: '2-digit', hour: '2-digit', minute: '2-digit'}).format(timestamp)
+    const date = format.split(', ')
 
+    const messageSend = {
+      personSendId: currentUser.uid,
+      personReceiveId: chosenUser.userId,
+      message: message,
+      timeStamp: {
+        date: date[0],
+        time: date[1]
+      }
+    }
+    setMessage('')
+
+    dispatch(addMessage(messageSend as MessageType))
   }
 
   useEffect(() => {
     console.log(room.id)
   }, [room])
+
+  useEffect(() => {
+
+  }, [socket])
 
   return (
     <div style={{width: '100%', height: '100%'}}>
