@@ -12,6 +12,10 @@ export default function SocketHandler(req, res) {
       socket.on('userInfo', (user) => {
         socket.broadcast.emit("new-user", user)
       })
+
+      socket.on('message', msgObj => {
+        socket.broadcast.emit('new-message', msgObj)
+      })
     })
   }
   res.end()

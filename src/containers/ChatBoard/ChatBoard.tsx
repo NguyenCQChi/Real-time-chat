@@ -11,13 +11,15 @@ import { UserType, RoomType } from '../../types';
 import { getAuth } from 'firebase/auth';
 import { SocketContext } from '@src/contexts/SocketContext';
 
+//TODO: when the second user joins there is a runtime error which it cannot read properties of undefined userId line 146
+
 const ChatBoard = () => {
   const theme = useTheme(); 
-  const [ search, setSearch ] = useState('')
+  const users = useSelector((state: ChatAppState) => state.users)
+  const [ search, setSearch ] = useState<UserType[]>(users)
   const [ selectedIndex, setSelectedIndex ] = useState<number>(0)
   const [ chosenRoom, setChosenRoom ] = useState<RoomType>(null)
   const dispatch = useDispatch()
-  const users = useSelector((state: ChatAppState) => state.users)
   const rooms = useSelector((state: ChatAppState) => state.rooms)
   const chosenUser = useSelector((state: ChatAppState) => state.chosenUser)
   const currentUser = getAuth().currentUser;
@@ -25,7 +27,11 @@ const ChatBoard = () => {
   const fromLogin = sessionStorage.getItem('fromLogin')
 
   const handleChange = (value: any) => {
-    setSearch(value)
+    if(value.length === 0 || value === undefined || value === null) {
+      setSearch(users)
+    } else {
+      setSearch(users.filter(user => user.name.toLowerCase().includes(value.toLowerCase())))
+    }
   }
 
   const handleListItemClick = (
@@ -112,6 +118,20 @@ const ChatBoard = () => {
             dispatch(addRoom(room))
           }
         })
+      } else {
+        // Update new user joining when this user not online
+        rooms.forEach(room => {
+          users.forEach(user => {
+            if(!room.id.includes(user.userId) && !checkRoom(room)) {
+              const newRoom = {
+                id: [currentUser.uid, user.userId],
+                messages: []
+              }
+              // dispatch(addRoom(newRoom))
+              updateRooms(newRoom)
+            }
+          }) 
+        })
       }
     }
   }, [users])
@@ -188,7 +208,7 @@ const ChatBoard = () => {
                   pb: '0px'
                 }
               }}>
-                {users.map((user, key) => (
+                {search.map((user, key) => (
                   <div key={key}>
                     <ListItemButton 
                       selected={selectedIndex === key}
@@ -218,7 +238,7 @@ const ChatBoard = () => {
               {chosenUser != null ? (<Avatar sx={{background: 'purple'}}> {firstLetter(chosenUser.name)} </Avatar>) :  <Skeleton variant='circular' sx={{width: '40px', height: '40px'}} />}
               {chosenUser != null ? (<p style={{fontSize: '18px'}}> {chosenUser.name} </p>) : <Skeleton variant='rectangular' sx={{width: '180px', height: '20px'}} />}
             </Box>
-            <Box sx={{flex: 'auto', borderRadius: '0 0 15px 15px', padding: '15px 20px'}}>
+            <Box sx={{flex: 'auto', borderRadius: '0 0 15px 15px', padding: '15px 20px', overflow: 'auto'}}>
               {chosenRoom != null ? <ChatContainer room={chosenRoom}/> : <Skeleton variant='rectangular' sx={{height: '100%'}} />}
             </Box>
           </Box>

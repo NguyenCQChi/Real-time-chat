@@ -17,7 +17,7 @@ body {
 
 ::-webkit-scrollbar {
   border-radius: 10px;
-  width: 15px;
+  width: 10px;
   background: rgba(0, 0, 0, 0.1)
 }
 
