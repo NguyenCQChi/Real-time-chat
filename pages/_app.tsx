@@ -1,14 +1,24 @@
 
 import '@styles/style.css';
 import { theme } from '@styles/index';
-import { ThemeProvider } from '@emotion/react';
+import { CacheProvider, ThemeProvider } from '@emotion/react';
+import { SocketProvider } from '@contexts/SocketContext';
+import { wrapper } from '@stores';
+import { Provider } from 'react-redux';
 
-function MyApp({ Component, pageProps } : { Component: any, pageProps: any}) {
+function MyApp({ Component, ...rest } : { Component: any}) {
+  const { store, props } = wrapper.useWrappedStore(rest);
+  const { pageProps } = props;
+  
   return (
-    <ThemeProvider theme={theme}>
-      <Component {...pageProps} />
-    </ThemeProvider>
+    <Provider store={store}>
+      <ThemeProvider theme={theme}>
+        <SocketProvider>
+          <Component {...pageProps} />
+        </SocketProvider>
+      </ThemeProvider>
+    </Provider>
   )
 }
 
-export default MyApp
+export default MyApp;

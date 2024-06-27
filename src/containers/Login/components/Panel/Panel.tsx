@@ -11,7 +11,7 @@ const Panel = () => {
 
   const Item = styled(Paper)(({theme}) => ({
     padding: '20px',
-    width: '60%'
+    width: '65%'
   }))
 
   const CustomButton = styled(Button)(({theme}) => ({

@@ -1,11 +1,25 @@
+import React, { useState, useContext } from 'react';
 import * as Yup from 'yup';
 import { Formik, Form as FormBase, FastField } from 'formik';
-import { Input } from '@components';
+import { Input, PasswordInput } from '@components';
 import { styled } from '@mui/material/styles';
-import { Button } from '@mui/base';
+import { Button } from '@mui/base';  
 import { motion } from 'framer-motion';
+import { auth, database } from '../../../../../firebaseConfig';
+import { setDoc, doc } from 'firebase/firestore';
+import { Alert } from '@mui/material';
+import { createUserWithEmailAndPassword, updateProfile, setPersistence, browserSessionPersistence } from 'firebase/auth';
+import io from 'socket.io-client';
+import Router from 'next/router';
+import { SocketContext } from '@contexts/SocketContext';
+import { UserType } from '../../../../types';
+
+let socket
 
 const CreateAcc = () => {
+  const [ failToast, setFailToast ] = useState(false);
+  const { setSocket } = useContext(SocketContext);
+
   const mailReg = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
 
   const validationSchema = Yup.object({
@@ -15,13 +29,56 @@ const CreateAcc = () => {
   })
 
   const initialValue = {
-    Name: '',
-    Email: '',
-    Password: '',
+    name: '',
+    email: '',
+    password: '',
   }
 
-  const onSubmit = async () => {
-    console.log("Submit")
+  const onSubmit = async (value: any) => {
+    setPersistence(auth, browserSessionPersistence)
+      .then(() => {
+        return createUserWithEmailAndPassword(auth, value.email, value.password)
+          .then((userCredential) => {
+            const user = userCredential.user
+            updateProfile(user, { 
+              displayName: value.name
+            }).then(async() => {
+              setFailToast(false)
+              const userData: UserType = {
+                name: value.name,
+                userId: userCredential.user.uid,
+                friends: [],
+                rooms: []
+              }
+          
+              try {
+                await setDoc(doc(database, 'users', userCredential.user.uid), userData)
+              } catch(e) {
+                return
+              }
+
+              socketInitializer(userData)
+              sessionStorage.setItem('fromLogin', 'false')
+              Router.push('/chat')
+            })
+            .catch((error) => {
+              setFailToast(true);
+            })
+          })
+          .catch((error) => {
+            setFailToast(true);
+          })
+      }).catch((error) => {
+        console.log(error.message)
+      })
+  }
+
+  const socketInitializer = async(user) => {
+    await fetch('api/socket')
+    socket = io()
+    setSocket(socket)
+
+    socket.emit('userInfo', user)
   }
 
   const CustomButton = styled(Button)(({theme}) => ({
@@ -54,7 +111,7 @@ const CreateAcc = () => {
       validateOnChange
     >
       {(formik) => {
-        const { isValid, dirty, isSubmitting } = formik;
+        const { isValid, dirty } = formik;
 
         return (
           <FormBase className='form'>
@@ -74,8 +131,9 @@ const CreateAcc = () => {
               name='password'
               placeholder='Password'
               required
-              component={Input}
-            />
+              component={PasswordInput}
+              />
+            { failToast && <Alert variant='outlined' severity='error'> Cannot create account! </Alert> }
             <div style={buttonContainer}>
               {(isValid && dirty) ? (
                 <motion.div
@@ -87,6 +145,7 @@ const CreateAcc = () => {
                   <CustomButton
                     disabled={!(isValid && dirty)}
                     sx={hoverButton}
+                    type='submit'
                   >
                     Create
                   </CustomButton>
