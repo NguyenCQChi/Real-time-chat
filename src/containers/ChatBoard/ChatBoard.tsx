@@ -16,7 +16,7 @@ import { SocketContext } from '@src/contexts/SocketContext';
 const ChatBoard = () => {
   const theme = useTheme(); 
   const users = useSelector((state: ChatAppState) => state.users)
-  const [ search, setSearch ] = useState<UserType[]>(users)
+  const [ search, setSearch ] = useState<UserType[]>([])
   const [ selectedIndex, setSelectedIndex ] = useState<number>(0)
   const [ chosenRoom, setChosenRoom ] = useState<RoomType>(null)
   const dispatch = useDispatch()
@@ -24,8 +24,8 @@ const ChatBoard = () => {
   const chosenUser = useSelector((state: ChatAppState) => state.chosenUser)
   const currentUser = getAuth().currentUser;
   const { socket } = useContext(SocketContext)
-  const fromLogin = sessionStorage.getItem('fromLogin')
-
+  // const fromLogin = sessionStorage.getItem('fromLogin')
+  const fromLogin = typeof window !== 'undefined' ? sessionStorage.getItem('fromLogin') : null;
   const handleChange = (value: any) => {
     if(value.length === 0 || value === undefined || value === null) {
       setSearch(users)
@@ -103,6 +103,10 @@ const ChatBoard = () => {
     }
   }, [])
 
+  useEffect(() => {
+    setSearch(users)
+  }, [users])
+
   //Default as the first user when the user just got into the page
   useEffect(() => {
     if(users.length > 0) {
@@ -169,7 +173,7 @@ const ChatBoard = () => {
 
   return (
     <Box sx={{display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', background: `${theme.palette.myBackground.light}`, gap: '35px'}}>
-      <NavigationBar sx={{minHeight: '80px', background: `${theme.palette.myBackground.main}`, boxShadow: `0px 2px 0px 0px ${theme.palette.myBackground.dark}`, px: '35px', display: 'flex', flexDirection: 'column', justifyContent: 'center'}}/>
+      <NavigationBar sx={{minHeight: '80px', background: `${theme.palette.myBackground.main}`, boxShadow: `0px 2px 0px 0px ${theme.palette.myBackground.dark}`, px: '35px', display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'}}/>
       <Box sx={{flex: 1, minHeight: '0px', marginBottom: '35px'}}>
         <Box sx={{display: 'flex', flexDirection: 'row', height: '100%', gap: '35px'}}>
 
